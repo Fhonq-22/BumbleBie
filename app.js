@@ -87,7 +87,7 @@ if (joystickBase && joystickStick) {
 
 // Người chơi
 const tenNguoiChoi = prompt("Nhập tên của bạn:") || "Người chơi";
-const idNguoiChoi = "ID_" + Math.floor(Math.random() * 1000000);
+const idNguoiChoi = "ID_" + Math.floor(Math.random() * 2222);
 
 // Tìm hoặc tạo phòng có chỗ trống
 async function findOrCreateRoom() {
@@ -120,7 +120,7 @@ async function startGame() {
     await nguoiChoiRef.set({ Ten: tenNguoiChoi, Diem: 0, ViTri: { x: 0, y: 0 } });
 
     // Xóa người chơi khi rời trang để giải phóng chỗ
-    window.addEventListener("beforeunload", () => {
+    window.addEventListener("beforeunload", async () => {
         nguoiChoiRef.remove();
     });
 
@@ -219,7 +219,7 @@ async function startGame() {
             });
         }
         return hoaMoi;
-    }    
+    }
 
     function kiemTraVaCham(ong, hoa) {
         const dx = ong.x - hoa.x;
@@ -247,13 +247,13 @@ async function startGame() {
             if (kiemTraVaCham(bee, danhSachHoa[i])) {
                 danhSachHoa.splice(i, 1);
                 bee.diem++;
-        
+
                 // Tạo hoa mới (1 cái) và cập nhật Firebase
                 const hoaMoi = taoHoaNgauNhien(1);
                 danhSachHoa = danhSachHoa.concat(hoaMoi);
                 danhSachHoaRef.set(danhSachHoa);
             }
-        }        
+        }
     }
 
     function draw() {
