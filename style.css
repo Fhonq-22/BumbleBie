@@ -1,0 +1,14 @@
+body {
+    margin: 0;
+    background: #a0d8f7; /* màu trời */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+  }
+  
+  canvas {
+    background: #dfffd2; /* màu vườn cỏ */
+    border: 2px solid #444;
+  }
+  
