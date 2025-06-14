@@ -22,11 +22,19 @@ const firebaseConfig = {
   const canvas = document.getElementById('gameCanvas');
   const ctx = canvas.getContext('2d');
   
+  // Bản đồ giới hạn
+  const mapLimit = {
+    left: -800,
+    right: 800,
+    top: -800,
+    bottom: 800
+  };
+  
   // Ong của mình
   const bee = {
     x: 0,
     y: 0,
-    size: 40,
+    size: 22,
     speed: 4,
     diem: 0
   };
@@ -52,8 +60,8 @@ const firebaseConfig = {
   function taoHoaNgauNhien(soLuong) {
     for (let i = 0; i < soLuong; i++) {
       danhSachHoa.push({
-        x: Math.random() * 3000 - 1500,
-        y: Math.random() * 3000 - 1500,
+        x: Math.random() * (mapLimit.right - mapLimit.left) + mapLimit.left,
+        y: Math.random() * (mapLimit.bottom - mapLimit.top) + mapLimit.top,
         size: 30
       });
     }
@@ -86,6 +94,11 @@ const firebaseConfig = {
     if (keys.ArrowLeft) bee.x -= bee.speed;
     if (keys.ArrowRight) bee.x += bee.speed;
   
+    // Giới hạn trong map
+    bee.x = Math.max(mapLimit.left, Math.min(mapLimit.right, bee.x));
+    bee.y = Math.max(mapLimit.top, Math.min(mapLimit.bottom, bee.y));
+  
+    // Ăn hoa
     for (let i = danhSachHoa.length - 1; i >= 0; i--) {
       if (kiemTraVaCham(bee, danhSachHoa[i])) {
         danhSachHoa.splice(i, 1);
@@ -104,6 +117,11 @@ const firebaseConfig = {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.save();
     ctx.translate(-camX, -camY);
+  
+    // Vẽ viền bản đồ
+    ctx.strokeStyle = "#888";
+    ctx.lineWidth = 3;
+    ctx.strokeRect(mapLimit.left, mapLimit.top, mapLimit.right - mapLimit.left, mapLimit.bottom - mapLimit.top);
   
     // Hoa
     for (let hoa of danhSachHoa) {
@@ -138,18 +156,19 @@ const firebaseConfig = {
     ctx.fill();
     ctx.stroke();
   
-    // Điểm (theo góc màn hình)
     ctx.restore();
+  
+    // Điểm (góc trên trái)
     ctx.fillStyle = "black";
     ctx.font = "18px Arial";
     ctx.fillText(`Điểm: ${bee.diem}`, 20, 30);
   }
   
+  // Game loop
   function gameLoop() {
     update();
     draw();
     requestAnimationFrame(gameLoop);
   }
-  
   gameLoop();
   
