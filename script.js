@@ -17,7 +17,7 @@ const firebaseConfig = {
   const idNguoiChoi = "id_" + Math.floor(Math.random() * 1000000);
   
   // Tham chiếu người chơi trong Firebase
-  const nguoiChoiRef = db.ref("BumbleBie/NguoiChoi/" + idNguoiChoi);
+  const nguoiChoiRef = db.ref("NguoiChoi/" + idNguoiChoi);
   
   // Canvas setup
   const canvas = document.getElementById('gameCanvas');
