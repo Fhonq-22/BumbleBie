@@ -1,14 +1,19 @@
 body {
     margin: 0;
-    background: #a0d8f7; /* màu trời */
+    padding: 0;
+    background: linear-gradient(to bottom, #e0f7fa, #b2ebf2);
     display: flex;
     justify-content: center;
     align-items: center;
     height: 100vh;
+    font-family: 'Arial', sans-serif;
   }
   
   canvas {
-    background: #dfffd2; /* màu vườn cỏ */
-    border: 2px solid #444;
+    border: 3px solid #009688;
+    border-radius: 10px;
+    background-color: #ffffff;
+    max-width: 100%;
+    height: auto;
   }
   

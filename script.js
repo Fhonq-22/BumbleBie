@@ -1,7 +1,8 @@
+// Firebase config
 const firebaseConfig = {
     apiKey: "AIzaSyB2jjVv9sGNVH1Zb7C0iEwr9yHrYv1vO1E",
     authDomain: "bumblebie-9cd7d.firebaseapp.com",
-    databaseURL: "https://bumblebie-9cd7d-default-rtdb.firebaseio.com", // 👈 dòng này quan trọng
+    databaseURL: "https://bumblebie-9cd7d-default-rtdb.firebaseio.com",
     projectId: "bumblebie-9cd7d",
     storageBucket: "bumblebie-9cd7d.firebasestorage.app",
     messagingSenderId: "293124755504",
@@ -12,85 +13,138 @@ const firebaseConfig = {
   firebase.initializeApp(firebaseConfig);
   const db = firebase.database();
   
-  // Nhập tên người chơi
+  // Người chơi
   const tenNguoiChoi = prompt("Nhập tên của bạn:");
-  const idNguoiChoi = "id_" + Math.floor(Math.random() * 1000000);
-  
-  // Tham chiếu người chơi trong Firebase
+  const idNguoiChoi = "ID_" + Math.floor(Math.random() * 1000000);
   const nguoiChoiRef = db.ref("NguoiChoi/" + idNguoiChoi);
   
-  // Canvas setup
+  // Canvas
   const canvas = document.getElementById('gameCanvas');
   const ctx = canvas.getContext('2d');
   
-  // Tạo ong ban đầu
+  // Ong của mình
   const bee = {
-    x: canvas.width / 2,
-    y: canvas.height / 2,
+    x: 0,
+    y: 0,
     size: 40,
     speed: 4,
     diem: 0
   };
   
-  // Khởi tạo dữ liệu người chơi trong Firebase
   nguoiChoiRef.set({
-    ten: tenNguoiChoi,
-    diem: bee.diem,
-    vi_tri: {
-      x: bee.x,
-      y: bee.y
+    Ten: tenNguoiChoi,
+    Diem: 0,
+    ViTri: { x: bee.x, y: bee.y }
+  });
+  
+  // Cập nhật vị trí
+  setInterval(() => {
+    nguoiChoiRef.child("ViTri").set({ x: bee.x, y: bee.y });
+  }, 500);
+  
+  // Điều khiển
+  const keys = {};
+  document.addEventListener('keydown', (e) => keys[e.key] = true);
+  document.addEventListener('keyup', (e) => keys[e.key] = false);
+  
+  // Hoa
+  let danhSachHoa = [];
+  function taoHoaNgauNhien(soLuong) {
+    for (let i = 0; i < soLuong; i++) {
+      danhSachHoa.push({
+        x: Math.random() * 3000 - 1500,
+        y: Math.random() * 3000 - 1500,
+        size: 30
+      });
+    }
+  }
+  taoHoaNgauNhien(10);
+  
+  // Người chơi khác
+  let nguoiChoiKhac = {};
+  db.ref("NguoiChoi").on("value", (snapshot) => {
+    const data = snapshot.val();
+    nguoiChoiKhac = {};
+    for (let id in data) {
+      if (id !== idNguoiChoi) {
+        nguoiChoiKhac[id] = data[id];
+      }
     }
   });
   
-  // Gửi vị trí ong lên Firebase mỗi 500ms
-  function capNhatViTriFirebase() {
-    nguoiChoiRef.child("ViTri").set({
-      x: bee.x,
-      y: bee.y
-    });
+  // Va chạm
+  function kiemTraVaCham(ong, hoa) {
+    const dx = ong.x - hoa.x;
+    const dy = ong.y - hoa.y;
+    return Math.sqrt(dx * dx + dy * dy) < (ong.size / 2 + hoa.size / 2);
   }
-  setInterval(capNhatViTriFirebase, 500);
   
-  // Lắng nghe phím điều khiển
-  const keys = {
-    ArrowUp: false,
-    ArrowDown: false,
-    ArrowLeft: false,
-    ArrowRight: false
-  };
-  
-  document.addEventListener('keydown', (e) => {
-    if (keys.hasOwnProperty(e.key)) keys[e.key] = true;
-  });
-  document.addEventListener('keyup', (e) => {
-    if (keys.hasOwnProperty(e.key)) keys[e.key] = false;
-  });
-  
-  // Cập nhật vị trí ong
+  // Game update
   function update() {
     if (keys.ArrowUp) bee.y -= bee.speed;
     if (keys.ArrowDown) bee.y += bee.speed;
     if (keys.ArrowLeft) bee.x -= bee.speed;
     if (keys.ArrowRight) bee.x += bee.speed;
   
-    // Giới hạn không cho ong bay ra ngoài canvas
-    bee.x = Math.max(bee.size / 2, Math.min(canvas.width - bee.size / 2, bee.x));
-    bee.y = Math.max(bee.size / 2, Math.min(canvas.height - bee.size / 2, bee.y));
+    for (let i = danhSachHoa.length - 1; i >= 0; i--) {
+      if (kiemTraVaCham(bee, danhSachHoa[i])) {
+        danhSachHoa.splice(i, 1);
+        bee.diem++;
+        nguoiChoiRef.child("Diem").set(bee.diem);
+        taoHoaNgauNhien(1);
+      }
+    }
   }
   
-  // Vẽ ong (tạm bằng ellipse vàng)
+  // Vẽ game với camera
   function draw() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    const camX = bee.x - canvas.width / 2;
+    const camY = bee.y - canvas.height / 2;
   
-    // Ong – hình ellipse vàng
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.save();
+    ctx.translate(-camX, -camY);
+  
+    // Hoa
+    for (let hoa of danhSachHoa) {
+      ctx.fillStyle = 'pink';
+      ctx.beginPath();
+      ctx.arc(hoa.x, hoa.y, hoa.size / 2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  
+    // Người chơi khác
+    for (let id in nguoiChoiKhac) {
+      const nguoi = nguoiChoiKhac[id];
+      const vt = nguoi.ViTri;
+      if (vt) {
+        ctx.fillStyle = 'gray';
+        ctx.beginPath();
+        ctx.ellipse(vt.x, vt.y, bee.size, bee.size * 0.7, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+  
+        ctx.fillStyle = "black";
+        ctx.font = "14px sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText(nguoi.Ten || "Người chơi", vt.x, vt.y - bee.size);
+      }
+    }
+  
+    // Ong của mình
     ctx.fillStyle = 'yellow';
     ctx.beginPath();
     ctx.ellipse(bee.x, bee.y, bee.size, bee.size * 0.7, 0, 0, Math.PI * 2);
     ctx.fill();
     ctx.stroke();
+  
+    // Điểm (theo góc màn hình)
+    ctx.restore();
+    ctx.fillStyle = "black";
+    ctx.font = "18px Arial";
+    ctx.fillText(`Điểm: ${bee.diem}`, 20, 30);
   }
   
-  // Game loop
   function gameLoop() {
     update();
     draw();
