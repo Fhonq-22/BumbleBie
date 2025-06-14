@@ -33,10 +33,65 @@ const firebaseConfig = {
   const bee = {
     x: 0,
     y: 0,
-    size: 40,
+    size: 22,
     speed: 4,
     diem: 0
   };
+  
+  // Load ảnh hoa từ thư mục assets
+  const flowerImgPaths = [
+    'assets/flower01.svg',
+    'assets/flower02.svg',
+    'assets/flower03.svg',
+    'assets/flower04.svg',
+    'assets/flower05.svg',
+    'assets/flower06.svg',
+    'assets/flower07.svg',
+    'assets/flower08.svg',
+    'assets/flower09.svg',
+    'assets/flower10.svg',
+    'assets/flower11.svg',
+    'assets/flower12.svg',
+    'assets/flower13.svg'
+  ];
+  const flowerImages = [];
+  let flowerImagesLoaded = 0;
+  
+  // Load ảnh ong của mình và ong người khác
+  const beeImg = new Image();
+  beeImg.src = 'assets/bee.svg';
+  let beeImgLoaded = false;
+  beeImg.onload = () => {
+    beeImgLoaded = true;
+    checkAllImagesLoaded();
+  };
+  
+  const beeOtherImg = new Image();
+  beeOtherImg.src = 'assets/beeother.svg';
+  let beeOtherImgLoaded = false;
+  beeOtherImg.onload = () => {
+    beeOtherImgLoaded = true;
+    checkAllImagesLoaded();
+  };
+  
+  // Hàm kiểm tra tất cả ảnh đã load xong
+  function checkAllImagesLoaded() {
+    if (flowerImagesLoaded === flowerImgPaths.length && beeImgLoaded && beeOtherImgLoaded) {
+      taoHoaNgauNhien(12);
+      gameLoop();
+    }
+  }
+  
+  // Load từng ảnh hoa
+  flowerImgPaths.forEach((path) => {
+    const img = new Image();
+    img.src = path;
+    img.onload = () => {
+      flowerImagesLoaded++;
+      checkAllImagesLoaded();
+    };
+    flowerImages.push(img);
+  });
   
   // Ghi dữ liệu người chơi lên Firebase lúc đầu
   nguoiChoiRef.set({
@@ -58,16 +113,17 @@ const firebaseConfig = {
   
   // Danh sách hoa
   let danhSachHoa = [];
+  
   function taoHoaNgauNhien(soLuong) {
     for (let i = 0; i < soLuong; i++) {
       danhSachHoa.push({
         x: Math.random() * (mapLimit.right - mapLimit.left - 60) + mapLimit.left + 30,
         y: Math.random() * (mapLimit.bottom - mapLimit.top - 60) + mapLimit.top + 30,
-        size: 30
+        size: 30,
+        imgIndex: Math.floor(Math.random() * flowerImages.length)
       });
     }
   }
-  taoHoaNgauNhien(15);
   
   // Người chơi khác
   let nguoiChoiKhac = {};
@@ -127,38 +183,52 @@ const firebaseConfig = {
     ctx.lineWidth = 3;
     ctx.strokeRect(mapLimit.left, mapLimit.top, mapLimit.right - mapLimit.left, mapLimit.bottom - mapLimit.top);
   
-    // Vẽ hoa
+    // Vẽ hoa dùng ảnh
     for (let hoa of danhSachHoa) {
-      ctx.fillStyle = 'pink';
-      ctx.beginPath();
-      ctx.arc(hoa.x, hoa.y, hoa.size / 2, 0, Math.PI * 2);
-      ctx.fill();
+      const img = flowerImages[hoa.imgIndex];
+      if (img) {
+        ctx.drawImage(img, hoa.x - hoa.size / 2, hoa.y - hoa.size / 2, hoa.size, hoa.size);
+      }
     }
   
-    // Vẽ người chơi khác
+    // Vẽ người chơi khác dùng ảnh beeother.svg
     for (let id in nguoiChoiKhac) {
       const nguoi = nguoiChoiKhac[id];
       const vt = nguoi.ViTri;
       if (vt) {
-        ctx.fillStyle = 'gray';
-        ctx.beginPath();
-        ctx.ellipse(vt.x, vt.y, bee.size, bee.size * 0.7, 0, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.stroke();
+        if (beeOtherImgLoaded) {
+          const w = bee.size * 2;
+          const h = bee.size * 2;
+          ctx.drawImage(beeOtherImg, vt.x - w / 2, vt.y - h / 2, w, h);
+        } else {
+          // Nếu ảnh chưa load, vẽ tạm ellipse
+          ctx.fillStyle = 'gray';
+          ctx.beginPath();
+          ctx.ellipse(vt.x, vt.y, bee.size, bee.size, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+        }
   
         ctx.fillStyle = 'black';
         ctx.font = '14px sans-serif';
         ctx.textAlign = 'center';
-        ctx.fillText(nguoi.Ten || 'Người chơi', vt.x, vt.y - bee.size);
+        ctx.fillText(nguoi.Ten || 'BẠN', vt.x, vt.y - bee.size);
       }
     }
   
-    // Vẽ ong của mình
-    ctx.fillStyle = 'yellow';
-    ctx.beginPath();
-    ctx.ellipse(bee.x, bee.y, bee.size, bee.size * 0.7, 0, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.stroke();
+    // Vẽ ong của mình dùng ảnh bee.svg
+    if (beeImgLoaded) {
+      const w = bee.size * 2;
+      const h = bee.size * 2;
+      ctx.drawImage(beeImg, bee.x - w / 2, bee.y - h / 2, w, h);
+    } else {
+      // Nếu ảnh ong của mình chưa load, vẽ tạm ellipse vàng
+      ctx.fillStyle = 'yellow';
+      ctx.beginPath();
+      ctx.ellipse(bee.x, bee.y, bee.size, bee.size, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+    }
   
     ctx.restore();
   
@@ -186,5 +256,6 @@ const firebaseConfig = {
     draw();
     requestAnimationFrame(gameLoop);
   }
-  gameLoop();
+  
+  // LƯU Ý: gameLoop chỉ chạy khi các ảnh hoa và ảnh ong đã load xong (xem trong checkAllImagesLoaded)
   
