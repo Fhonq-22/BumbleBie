@@ -119,7 +119,7 @@ async function findOrCreateRoom() {
     const Phong = snapshot.val() || {};
 
     for (let roomId in Phong) {
-        const nguoiChoi = Phong[roomId].NguoiChoi || {};
+        const nguoiChoi = Phong[roomId].DanhSachNguoiChoi || {};
         if (Object.keys(nguoiChoi).length < MAX_PLAYERS_PER_ROOM) {
             return roomId;
         }
