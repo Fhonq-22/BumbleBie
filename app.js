@@ -141,10 +141,18 @@ async function startGame() {
     // Đăng ký người chơi mới
     await nguoiChoiRef.set({ Ten: tenNguoiChoi, Diem: 0, ViTri: { x: 0, y: 0 } });
 
-    // Xóa người chơi khi rời trang để giải phóng chỗ
-    window.addEventListener("beforeunload", async () => {
+    // Chỉ đăng ký xóa khi chắc chắn Firebase đang kết nối
+    firebase.database().ref(".info/connected").on("value", (snap) => {
+        if (snap.val() === true) {
+            nguoiChoiRef.onDisconnect().remove();
+        }
+    });
+
+    // Thêm fallback khi unload
+    window.addEventListener("beforeunload", () => {
         nguoiChoiRef.remove();
     });
+
 
     // Canvas
     const canvas = document.getElementById('gameCanvas');
@@ -346,17 +354,17 @@ async function startGame() {
     }
 
     const leaderboardList = document.getElementById('leaderboardList');
-roomNguoiChoiRef.on("value", snapshot => {
-    const data = snapshot.val() || {};
-    const players = Object.values(data);
-    players.sort((a, b) => (b.Diem || 0) - (a.Diem || 0));
-    const top5 = players.slice(0, 5);
+    roomNguoiChoiRef.on("value", snapshot => {
+        const data = snapshot.val() || {};
+        const players = Object.values(data);
+        players.sort((a, b) => (b.Diem || 0) - (a.Diem || 0));
+        const top5 = players.slice(0, 5);
 
-    leaderboardList.innerHTML = top5.map(p => {
-        const textColor = p.Ten === tenNguoiChoi ? 'yellow' : 'black';
-        return `<li style="color: ${textColor}"><strong>${p.Ten || 'Ẩn danh'}</strong> - ${p.Diem || 0} điểm</li>`;
-    }).join('');
-});
+        leaderboardList.innerHTML = top5.map(p => {
+            const textColor = p.Ten === tenNguoiChoi ? 'yellow' : 'black';
+            return `<li style="color: ${textColor}"><strong>${p.Ten || 'Ẩn danh'}</strong> - ${p.Diem || 0} điểm</li>`;
+        }).join('');
+    });
 
 
 
