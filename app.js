@@ -14,7 +14,30 @@ const db = firebase.database();
 
 const MAX_PLAYERS_PER_ROOM = 5;
 
-localStorage.clear();
+const canvas = document.getElementById("gameCanvas");
+const ctx = canvas.getContext("2d");
+
+function resizeCanvas() {
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+
+    // Thiết lập kích thước hiển thị
+    canvas.style.width = vw + "px";
+    canvas.style.height = vh + "px";
+
+    // Thiết lập kích thước vẽ thực tế
+    const ratio = window.devicePixelRatio || 1;
+    canvas.width = vw * ratio;
+    canvas.height = vh * ratio;
+
+    // Scale để bạn vẽ bằng "vw" và "vh" thay vì pixel thật
+    ctx.setTransform(1, 0, 0, 1, 0, 0); // reset
+    ctx.scale(ratio, ratio);
+}
+
+window.addEventListener("resize", resizeCanvas);
+resizeCanvas();
+
 
 // Bản đồ giới hạn
 const mapLimit = {
@@ -111,7 +134,6 @@ async function findOrCreateRoom() {
 // Khởi tạo game chính
 async function startGame() {
     const roomId = await findOrCreateRoom();
-    console.log("Bạn tham gia phòng:", roomId);
 
     const nguoiChoiRef = db.ref("Phong/" + roomId + "/DanhSachNguoiChoi/" + idNguoiChoi);
     const roomNguoiChoiRef = db.ref("Phong/" + roomId + "/DanhSachNguoiChoi");
@@ -257,8 +279,9 @@ async function startGame() {
     }
 
     function draw() {
-        const camX = bee.x - canvas.width / 2;
-        const camY = bee.y - canvas.height / 2;
+        const camX = bee.x - window.innerWidth / 2;
+        const camY = bee.y - window.innerHeight / 2;
+
 
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         ctx.save();
@@ -323,15 +346,19 @@ async function startGame() {
     }
 
     const leaderboardList = document.getElementById('leaderboardList');
-    roomNguoiChoiRef.on("value", snapshot => {
-        const data = snapshot.val() || {};
-        const players = Object.values(data);
-        players.sort((a, b) => (b.Diem || 0) - (a.Diem || 0));
-        const top5 = players.slice(0, 5);
-        leaderboardList.innerHTML = top5.map(p =>
-            `<li><strong>${p.Ten || 'Ẩn danh'}</strong> - ${p.Diem || 0} điểm</li>`
-        ).join('');
-    });
+roomNguoiChoiRef.on("value", snapshot => {
+    const data = snapshot.val() || {};
+    const players = Object.values(data);
+    players.sort((a, b) => (b.Diem || 0) - (a.Diem || 0));
+    const top5 = players.slice(0, 5);
+
+    leaderboardList.innerHTML = top5.map(p => {
+        const textColor = p.Ten === tenNguoiChoi ? 'yellow' : 'black';
+        return `<li style="color: ${textColor}"><strong>${p.Ten || 'Ẩn danh'}</strong> - ${p.Diem || 0} điểm</li>`;
+    }).join('');
+});
+
+
 
     function gameLoop() {
         update();
